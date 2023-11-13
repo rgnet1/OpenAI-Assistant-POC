@@ -53,7 +53,7 @@ def main():
                 thread_id=thread.id,
                 run_id=run.id
             )
-            print(run_status.model_dump_json(indent=4))
+            # print(run_status.model_dump_json(indent=4))
 
             # If run is completed, get messages
             if run_status.status == 'completed':
