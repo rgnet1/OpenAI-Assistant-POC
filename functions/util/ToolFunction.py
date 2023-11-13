@@ -9,6 +9,16 @@ class ToolFunction(ABC):
         self.required_params = []
 
     def add_parameter(self, name, param_type, description, enum=None, required=True):
+
+        '''
+        param_type: 
+            string
+            number
+            boolean
+            null/empty
+            object
+            array
+        '''
         param_info = {"type": param_type, "description": description}
         if enum is not None:
             param_info["enum"] = enum

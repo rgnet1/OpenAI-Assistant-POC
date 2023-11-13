@@ -1,2 +1,4 @@
 openai
 yfinance
+hassapi
+homeassistant_api
