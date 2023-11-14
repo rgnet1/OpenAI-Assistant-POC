@@ -4,7 +4,7 @@ import streamlit as st
 from key import *
 from helpers.function_loader import *
 from helpers.HomeAssitantEntityList import *
-
+NEW_SESSION = False
 
 # Dynamically load all functions in the function_descriptions fodler
 function_map, function_desc_list = load_functions_from_directory(directory="functions")
@@ -28,20 +28,29 @@ def main():
         if not client:
 
             client = openai.OpenAI(api_key=OPENAI_API_KEY)
-            # upload files
-            # filename = 'home_assitant_entity_list.txt'
-            # print("uploading file...")
-            # file = client.files.create(
-            #     file=open(filename, "rb"),
-            #     purpose="assistants"
-            # )
-            print("Done uploading file... creating assitant")
-            assistant = client.beta.assistants.create(
-            instructions=ASSITANT_DESCRIPTION,
-            model="gpt-4-1106-preview",
-            tools=function_desc_list,
-            # file_ids=[file.id]
-            )
+            if not NEW_SESSION:
+                # grab most recent assitant
+                my_assitants = client.beta.assistants.list(
+                    order="desc",
+                    limit=1,
+                )
+                assistant = client.beta.assistants.retrieve(my_assitants.first_id)
+                print(assistant)
+            else:
+                # upload files
+                # filename = 'home_assitant_entity_list.txt'
+                # print("uploading file...")
+                # file = client.files.create(
+                #     file=open(filename, "rb"),
+                #     purpose="assistants"
+                # )
+                print("Done uploading file... creating assitant")
+                assistant = client.beta.assistants.create(
+                instructions=ASSITANT_DESCRIPTION,
+                model="gpt-4-1106-preview",
+                tools=function_desc_list,
+                # file_ids=[file.id]
+                )
 
             thread = client.beta.threads.create()
 

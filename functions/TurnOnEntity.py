@@ -4,7 +4,7 @@ from homeassistant_api import Client
 from .util.ToolFunction import *
 
 DEFAULT_NAME = "turn_on_off_entity"
-DEFAULT_DESCRIPTION = "turn on or off an entity in home assitant, like a tv or stero system"
+DEFAULT_DESCRIPTION = "turn on or off an entity in home assitant, only for media_player domain "
 
 class TurnOnEntity(ToolFunction):
     def __init__(self, name=DEFAULT_NAME, description=DEFAULT_DESCRIPTION):
