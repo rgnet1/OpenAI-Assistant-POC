@@ -4,7 +4,8 @@ __pycache__/
 *$py.class
 
 key.py
-
+home_assistant_data.json
+home_assitant_entity_list.txt
 # C extensions
 *.so
 

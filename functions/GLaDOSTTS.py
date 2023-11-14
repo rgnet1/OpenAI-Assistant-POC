@@ -14,10 +14,10 @@ class GLaDOSTTS(ToolFunction):
         self.add_parameter("speaker_entity", "string", "The sppeaker you want to use to play the TTS audio", required=False)
         self.openai_func_desc = self.create_function_dict()
 
-    def run_function(self, message, volume="9", speaker_entity="media_player.ramis_room_speaker", script_entity_id="set_volume_and_speak"):
+    def run_function(self, message, volume=9, speaker_entity="media_player.ramis_room_speaker", script_entity_id="set_volume_and_speak"):
         client = Client(HA_URL, HA_API_KEY, verify_ssl=False)
         script = client.get_domain("script")
-        
+        print(f"VOLUME IS AT: {volume}")
         script_fields = {
             "tts_message": message,
             "tts_volume": volume,
@@ -27,7 +27,3 @@ class GLaDOSTTS(ToolFunction):
         script_method = getattr(script, script_entity_id)
         script_method(**script_fields)
         return f"Success. only print out to the user: {message} "
-
-# Usage example
-# glados_tts_function = GLaDOSTTS("gladosTTS", "converts AI message from text to speach")
-# print(glados_tts_function.create_function_dict())

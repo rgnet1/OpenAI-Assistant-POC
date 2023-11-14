@@ -3,9 +3,14 @@ import time
 import streamlit as st
 from key import *
 from helpers.function_loader import *
+from helpers.HomeAssitantEntityList import *
+
 
 # Dynamically load all functions in the function_descriptions fodler
 function_map, function_desc_list = load_functions_from_directory(directory="functions")
+
+# append retrival tools:
+# function_desc_list.insert(0, {"type":"retrieval"})
 
 ASSITANT_DESCRIPTION = "You are GLaDOS. Only talk like GLaDOS from the video game Portal and \
             Portal 2. Use her snarky attitude. All of your responses must be from first \
@@ -14,7 +19,8 @@ ASSITANT_DESCRIPTION = "You are GLaDOS. Only talk like GLaDOS from the video gam
             commands to control the home. This includes, turning on and off lights, \
             opening blinds and much more. Give snarky responses every time you execute \
             a command for the user. Always send the final response to glados_tts, \
-            and print out the message for the user"
+            and print out the message for the user. Always use your knowledge \
+            base to find the combine name for home assitant entity commands"
 
 def main():
     client = None
@@ -22,11 +28,19 @@ def main():
         if not client:
 
             client = openai.OpenAI(api_key=OPENAI_API_KEY)
-            print(client)
+            # upload files
+            # filename = 'home_assitant_entity_list.txt'
+            # print("uploading file...")
+            # file = client.files.create(
+            #     file=open(filename, "rb"),
+            #     purpose="assistants"
+            # )
+            print("Done uploading file... creating assitant")
             assistant = client.beta.assistants.create(
             instructions=ASSITANT_DESCRIPTION,
             model="gpt-4-1106-preview",
-            tools=function_desc_list
+            tools=function_desc_list,
+            # file_ids=[file.id]
             )
 
             thread = client.beta.threads.create()
