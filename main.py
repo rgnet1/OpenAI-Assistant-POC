@@ -4,14 +4,14 @@ import streamlit as st
 from key import *
 from helpers.function_loader import *
 from helpers.HomeAssitantEntityList import *
-NEW_SESSION = False
-
+EXISTING_ASSISTANT = True
+UPDATE_EXISTING_ASSITANT = False
 # Dynamically load all functions in the function_descriptions fodler
 function_map, function_desc_list = load_functions_from_directory(directory="functions")
 
 # append retrival tools:
 # function_desc_list.insert(0, {"type":"retrieval"})
-
+ASSITANT_NAME = "GLaDOS AI"
 ASSITANT_DESCRIPTION = "You are GLaDOS. Only talk like GLaDOS from the video game Portal and \
             Portal 2. Use her snarky attitude. All of your responses must be from first \
             person from GLaDOS's perspective. Try to include snarky responses in the \
@@ -20,37 +20,116 @@ ASSITANT_DESCRIPTION = "You are GLaDOS. Only talk like GLaDOS from the video gam
             opening blinds and much more. Give snarky responses every time you execute \
             a command for the user. Always send the final response to glados_tts, \
             and print out the message for the user. Always use your knowledge \
-            base to find the combine name for home assitant entity commands"
+            base to find the combine_name for home assitant entity or device commands"
+class Assitant:
+
+    def __init__(self) -> None:
+        client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        assitant = None
+
+    def upload_assitant_files(self, file_names_list: []):
+        """
+        Uploads files to OpenAI for assistant knowledge base.
+
+        Parameters:
+        file_names_list : list of str
+            List of file path/names to upload.
+
+        Returns:
+        list
+            A list of OpenAI file ids.
+        """
+        file_list = []
+        for file in file_names_list:
+            print(f"uploading file: {filename}")
+            file_list.append(self.client.files.create(
+                file=open(filename, "rb"),
+                purpose="assistants"
+            ).id)
+
+        return file_list
+
+
+    def make_assitant(self, files=None):
+        """
+        Creates OpenAI assitant
+
+        Parameters:
+        files : list of str
+            List of files/path/names to uplaod
+
+        Returns:
+        assistant
+            Open AI assitant object
+        """
+        # upload files
+        file_id_list = None
+        if files:
+            file_id_list = self.upload_assitant_files(files)
+
+        
+        print("Done uploading file... creating assitant")
+        assistant = self.client.beta.assistants.create(
+            name=ASSITANT_NAME,
+            instructions=ASSITANT_DESCRIPTION,
+            model="gpt-4-1106-preview",
+            tools=function_desc_list,
+            file_ids=file_id_list,
+        )
+        return assistant
+
+    def update_assitant(self, assistant,name=None, instruction=None, model=None, function_list=None, file_id_list=None):
+
+        updated_assitant = self.client.beta.assistants.update(assistant_id=assistant.id,
+            name=name,
+            instruction=instruction,
+            model=model,
+            tools=function_list,
+            file_id_list=file_id_list, 
+            )
+
+        return updated_assitant
+
+
+    def get_assistants_list(self):
+        """
+        Gets list of up to 20 assitant from your open AI account
+
+        Returns:
+        list
+            A list of assitants in your open AI account
+        """
+        return self.client.beta.assistants.list(
+            order="desc",
+            limit=20,
+        )
+
 
 def main():
     client = None
     while True:
         if not client:
 
-            client = openai.OpenAI(api_key=OPENAI_API_KEY)
-            if not NEW_SESSION:
-                # grab most recent assitant
-                my_assitants = client.beta.assistants.list(
-                    order="desc",
-                    limit=1,
-                )
-                assistant = client.beta.assistants.retrieve(my_assitants.first_id)
-                print(assistant)
-            else:
-                # upload files
-                # filename = 'home_assitant_entity_list.txt'
-                # print("uploading file...")
-                # file = client.files.create(
-                #     file=open(filename, "rb"),
-                #     purpose="assistants"
-                # )
-                print("Done uploading file... creating assitant")
-                assistant = client.beta.assistants.create(
-                instructions=ASSITANT_DESCRIPTION,
-                model="gpt-4-1106-preview",
-                tools=function_desc_list,
-                # file_ids=[file.id]
-                )
+            Glados = Assitant()
+            if EXISTING_ASSISTANT:
+                # Find existing GLADOS assitant
+                my_assitants = Glados.get_assistants_list()
+                for assitant_itterator in my_assitants.data:
+                    if assitant_itterator.name == ASSITANT_NAME:
+                        assistant = Glados.client.beta.assistants.retrieve(assitant_itterator.id)
+                        if UPDATE_EXISTING_ASSITANT:
+                            assistant = Glados.update_assitant(assistant=assistant,
+                                name=ASSITANT_NAME,
+                                instruction=ASSITANT_DESCRIPTION,
+                                function_list=function_desc_list,
+                                model=None,
+                                file_id_list=None
+                            ) 
+            if not assistant:
+                assistant = Glados.make_assitant(files=['home_assitant_data.json'])
+            
+            print(assistant.name)
+                
 
             thread = client.beta.threads.create()
 
