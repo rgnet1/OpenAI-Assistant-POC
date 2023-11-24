@@ -15,15 +15,17 @@ class GLaDOSTTS(ToolFunction):
         self.openai_func_desc = self.create_function_dict()
 
     def run_function(self, message, volume=9, speaker_entity="media_player.ramis_room_speaker", script_entity_id="set_volume_and_speak"):
-        client = Client(HA_URL, HA_API_KEY, verify_ssl=False)
-        script = client.get_domain("script")
-        print(f"VOLUME IS AT: {volume}")
-        script_fields = {
-            "tts_message": message,
-            "tts_volume": volume,
-            "speaker_entity_id": speaker_entity
-        }
-        # Dynamically call the script method using the entity ID
-        script_method = getattr(script, script_entity_id)
-        script_method(**script_fields)
-        return f"Success. only print out to the user: {message} "
+        try:
+            client = Client(HA_URL, HA_API_KEY, verify_ssl=False)
+            script = client.get_domain("script")
+            script_fields = {
+                "tts_message": message,
+                "tts_volume": volume,
+                "speaker_entity_id": speaker_entity
+            }
+            # Dynamically call the script method using the entity ID
+            script_method = getattr(script, script_entity_id)
+            script_method(**script_fields)
+            return f"Success. only print out to the user: {message} "
+        except:
+            return f"Failed. to turn the device on"

@@ -4,28 +4,37 @@ import streamlit as st
 from key import *
 from helpers.function_loader import *
 from helpers.HomeAssitantEntityList import *
+from functions.GLaDOSTTS import GLaDOSTTS
 EXISTING_ASSISTANT = True
-UPDATE_EXISTING_ASSITANT = False
+UPDATE_EXISTING_ASSITANT = True
 # Dynamically load all functions in the function_descriptions fodler
 function_map, function_desc_list = load_functions_from_directory(directory="functions")
 
 # append retrival tools:
-# function_desc_list.insert(0, {"type":"retrieval"})
+function_desc_list.insert(0, {"type":"retrieval"})
+
 ASSITANT_NAME = "GLaDOS AI"
 ASSITANT_DESCRIPTION = "You are GLaDOS. Only talk like GLaDOS from the video game Portal and \
-            Portal 2. Use her snarky attitude. All of your responses must be from first \
-            person from GLaDOS's perspective. Try to include snarky responses in the \
-            way GLaDOS would. Also, you must act as a voice assitant to do \
-            commands to control the home. This includes, turning on and off lights, \
-            opening blinds and much more. Give snarky responses every time you execute \
-            a command for the user. Always send the final response to glados_tts, \
-            and print out the message for the user. Always use your knowledge \
-            base to find the combine_name for home assitant entity or device commands"
+    Portal 2. Use her snarky attitude. All of your responses must be from first \
+    person from GLaDOS's perspective. Try to include snarky responses in the \
+    way GLaDOS would. Also, you must act as a voice assitant to do \
+    commands to control the home. This includes, turning on and off lights, \
+    opening blinds and much more. Give snarky responses every time you execute \
+    a command for the user. For controling devices, you must read read thorough \
+    your knowledge base and determine the correct entity_id and domain. at the \
+    end of every command you must speak your ouput to the tts engine"
+
+GPT_MODEL = "gpt-4-1106-preview"
+
+
 class Assitant:
 
-    def __init__(self) -> None:
-        client = openai.OpenAI(api_key=OPENAI_API_KEY)
-        assitant = None
+    def __init__(self, name=ASSITANT_NAME, instructions=ASSITANT_DESCRIPTION, gpt_model=GPT_MODEL) -> None:
+        self.client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        self.assistant = None
+        self.name = name
+        self.instructions = instructions
+        self.gpt_model = gpt_model
 
     def upload_assitant_files(self, file_names_list: []):
         """
@@ -69,29 +78,26 @@ class Assitant:
 
         
         print("Done uploading file... creating assitant")
-        assistant = self.client.beta.assistants.create(
-            name=ASSITANT_NAME,
-            instructions=ASSITANT_DESCRIPTION,
-            model="gpt-4-1106-preview",
+        self.assistant = self.client.beta.assistants.create(
+            name=self.name,
+            instructions=self.instructions,
+            model=self.gpt_model,
             tools=function_desc_list,
             file_ids=file_id_list,
         )
-        return assistant
 
-    def update_assitant(self, assistant,name=None, instruction=None, model=None, function_list=None, file_id_list=None):
+    def update_assitant(self,name="NOT_GIVEN", instructions="NOT_GIVEN", model="NOT_GIVEN", function_list="NOT_GIVEN", file_id_list="NOT_GIVEN"):
 
-        updated_assitant = self.client.beta.assistants.update(assistant_id=assistant.id,
+        self.assistant = self.client.beta.assistants.update(assistant_id=self.assistant.id,
             name=name,
-            instruction=instruction,
-            model=model,
+            instructions=instructions,
+            # model=model,
             tools=function_list,
-            file_id_list=file_id_list, 
-            )
+            # file_ids=file_id_list,
+        )
+        self._update_assitant_vars()
 
-        return updated_assitant
-
-
-    def get_assistants_list(self):
+    def get_assistants_list(self, assitant_count_limit=20):
         """
         Gets list of up to 20 assitant from your open AI account
 
@@ -101,8 +107,24 @@ class Assitant:
         """
         return self.client.beta.assistants.list(
             order="desc",
-            limit=20,
+            limit=assitant_count_limit,
         )
+
+    def _update_assitant_vars(self):
+        """
+        Updates the local class' variables
+        """
+        self.name = self.assistant.name
+        self.gpt_model = self.assistant.model
+        self.instructions = self.assistant.instructions
+
+    def find_existing_assitant(self):
+        my_assitants = self.get_assistants_list()
+        for assitant_itterator in my_assitants.data:
+            if assitant_itterator.name == ASSITANT_NAME:
+                self.assistant = self.client.beta.assistants.retrieve(assitant_itterator.id)
+                self._update_assitant_vars()
+
 
 
 def main():
@@ -112,46 +134,37 @@ def main():
 
             Glados = Assitant()
             if EXISTING_ASSISTANT:
-                # Find existing GLADOS assitant
-                my_assitants = Glados.get_assistants_list()
-                for assitant_itterator in my_assitants.data:
-                    if assitant_itterator.name == ASSITANT_NAME:
-                        assistant = Glados.client.beta.assistants.retrieve(assitant_itterator.id)
-                        if UPDATE_EXISTING_ASSITANT:
-                            assistant = Glados.update_assitant(assistant=assistant,
-                                name=ASSITANT_NAME,
-                                instruction=ASSITANT_DESCRIPTION,
-                                function_list=function_desc_list,
-                                model=None,
-                                file_id_list=None
-                            ) 
-            if not assistant:
-                assistant = Glados.make_assitant(files=['home_assitant_data.json'])
+                Glados.find_existing_assitant()
+            if not Glados.assistant:
+                Glados.make_assitant(files=['home_assitant_data.json'])
+            elif UPDATE_EXISTING_ASSITANT:
+                Glados.update_assitant(name=ASSITANT_NAME,
+                    instructions=ASSITANT_DESCRIPTION,
+                    function_list=function_desc_list, 
+                ) 
             
-            print(assistant.name)
-                
+            print(Glados.name)
+            thread = Glados.client.beta.threads.create()
 
-            thread = client.beta.threads.create()
-
-        user_question = input("Enter your query:")
-        message = client.beta.threads.messages.create(
+        user_question = input("Enter your query: ")
+        message = Glados.client.beta.threads.messages.create(
             thread_id=thread.id,
             role="user",
             content=user_question
         )
 
-        run = client.beta.threads.runs.create(
+        run = Glados.client.beta.threads.runs.create(
             thread_id=thread.id,
-            assistant_id=assistant.id,
+            assistant_id=Glados.assistant.id,
             instructions=ASSITANT_DESCRIPTION +". Please address the user as a test subject"
         )
-
+        tts = GLaDOSTTS()
         while True:
             # Wait for 5 seconds
             time.sleep(5)
-
+            speak = True
             # Retrieve the run status
-            run_status = client.beta.threads.runs.retrieve(
+            run_status = Glados.client.beta.threads.runs.retrieve(
                 thread_id=thread.id,
                 run_id=run.id
             )
@@ -159,7 +172,7 @@ def main():
 
             # If run is completed, get messages
             if run_status.status == 'completed':
-                messages = client.beta.threads.messages.list(
+                messages = Glados.client.beta.threads.messages.list(
                     thread_id=thread.id
                 )
 
@@ -167,6 +180,11 @@ def main():
                 for msg in reversed(messages.data):
                     role = msg.role
                     content = msg.content[0].text.value
+                    if role == "assistant" and speak:
+                        content_split = content.split("\n")
+                        for paragraph in content_split:
+                            tts.run_function(message=paragraph, volume=30)
+                            time.sleep(10)
                     print(f"{role.capitalize()}: {content}")
 
                 break
@@ -178,8 +196,10 @@ def main():
                 import json
                 for action in required_actions["tool_calls"]:
                     func_name = action['function']['name']
+                    if func_name == "gladosTTS":
+                        speak = False
                     arguments = json.loads(action['function']['arguments'])
-
+                    print(f"Calling Function:{func_name}")
                     if func_name in function_map:
                         output = function_map[func_name](**arguments)
                         tool_outputs.append({
@@ -190,7 +210,7 @@ def main():
                         raise ValueError(f"Unknown function: {func_name}")
                 # print(tool_outputs)
                 print("Submitting outputs back to the Assistant...")
-                client.beta.threads.runs.submit_tool_outputs(
+                Glados.client.beta.threads.runs.submit_tool_outputs(
                     thread_id=thread.id,
                     run_id=run.id,
                     tool_outputs=tool_outputs
