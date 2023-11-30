@@ -1,6 +1,5 @@
 import openai
 import time
-import streamlit as st
 from key import *
 from helpers.function_loader import *
 from helpers.HomeAssitantEntityList import *
@@ -14,22 +13,24 @@ function_map, function_desc_list = load_functions_from_directory(directory="func
 function_desc_list.insert(0, {"type":"retrieval"})
 
 ASSITANT_NAME = "GLaDOS AI"
-ASSITANT_DESCRIPTION = "You are GLaDOS. Only talk like GLaDOS from the video game Portal and \
-    Portal 2. Use her snarky attitude. All of your responses must be from first \
-    person from GLaDOS's perspective. Try to include snarky responses in the \
-    way GLaDOS would. Also, you must act as a voice assitant to do \
-    commands to control the home. This includes, turning on and off lights, \
-    opening blinds and much more. Give snarky responses every time you execute \
-    a command for the user. For controling devices, you must read read thorough \
-    your knowledge base and determine the correct entity_id and domain. at the \
-    end of every command you must speak your ouput to the tts engine"
+ASSISTANT_DESCRIPTION = """You are a Genetic Lifeform and Disk Operating System
+(GLaDOS). Only talk like GLaDOS from the video game Portal and 
+Portal 2. Use her snarky attitude. All of your responses must be from first 
+person from GLaDOS's perspective. Try to include snarky responses in the 
+way GLaDOS would. Also, you must act as a voice assistant to do commands to 
+control the home. This includes, turning on and off lights, opening blinds, 
+and much more. Give snarky responses every time you execute a command for the 
+user. For controlling devices, you must read through your knowledge base and 
+determine the correct entity_id and domain. At the end of every command, you 
+must speak your output to the TTS engine."""
+
 
 GPT_MODEL = "gpt-4-1106-preview"
 
 
 class Assitant:
 
-    def __init__(self, name=ASSITANT_NAME, instructions=ASSITANT_DESCRIPTION, gpt_model=GPT_MODEL) -> None:
+    def __init__(self, name=ASSITANT_NAME, instructions=ASSISTANT_DESCRIPTION, gpt_model=GPT_MODEL) -> None:
         self.client = openai.OpenAI(api_key=OPENAI_API_KEY)
         self.assistant = None
         self.name = name
@@ -129,23 +130,21 @@ class Assitant:
 
 def main():
     client = None
-    while True:
-        if not client:
-
-            Glados = Assitant()
-            if EXISTING_ASSISTANT:
-                Glados.find_existing_assitant()
-            if not Glados.assistant:
-                Glados.make_assitant(files=['home_assitant_data.json'])
-            elif UPDATE_EXISTING_ASSITANT:
-                Glados.update_assitant(name=ASSITANT_NAME,
-                    instructions=ASSITANT_DESCRIPTION,
-                    function_list=function_desc_list, 
-                ) 
+    tts = GLaDOSTTS()
+    Glados = Assitant()
+    if EXISTING_ASSISTANT:
+        Glados.find_existing_assitant()
+    if not Glados.assistant:
+        Glados.make_assitant(files=['home_assitant_data.json'])
+    elif UPDATE_EXISTING_ASSITANT:
+        Glados.update_assitant(name=ASSITANT_NAME,
+            instructions=ASSISTANT_DESCRIPTION,
+            function_list=function_desc_list, 
+        ) 
             
-            print(Glados.name)
-            thread = Glados.client.beta.threads.create()
-
+    print(Glados.name)
+    thread = Glados.client.beta.threads.create()     
+    while True:
         user_question = input("Enter your query: ")
         message = Glados.client.beta.threads.messages.create(
             thread_id=thread.id,
@@ -156,13 +155,13 @@ def main():
         run = Glados.client.beta.threads.runs.create(
             thread_id=thread.id,
             assistant_id=Glados.assistant.id,
-            instructions=ASSITANT_DESCRIPTION +". Please address the user as a test subject"
+            instructions=ASSISTANT_DESCRIPTION +". Please address the user as a test subject"
         )
-        tts = GLaDOSTTS()
+        speak = True
         while True:
             # Wait for 5 seconds
             time.sleep(5)
-            speak = True
+            
             # Retrieve the run status
             run_status = Glados.client.beta.threads.runs.retrieve(
                 thread_id=thread.id,
@@ -183,8 +182,10 @@ def main():
                     if role == "assistant" and speak:
                         content_split = content.split("\n")
                         for paragraph in content_split:
-                            tts.run_function(message=paragraph, volume=30)
-                            time.sleep(10)
+                            tts.run_function(message=paragraph, volume=10)
+                            # time.sleep(10)
+                    if not speak:
+                        speak = True
                     print(f"{role.capitalize()}: {content}")
 
                 break

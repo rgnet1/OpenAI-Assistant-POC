@@ -1,0 +1,4 @@
+# Only replace items in bracket. EX: keep /api in the HA_URL
+OPENAI_API_KEY="<token-here>"
+HA_API_KEY="<token-here>"
+HA_URL="http://<ip>:<port>/api"

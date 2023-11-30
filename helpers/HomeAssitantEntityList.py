@@ -9,7 +9,7 @@ filename = 'home_assistant_data.json'
 if os.path.exists(filename):
     print(f"File '{filename}' already exists. No new data will be written.")
 else:
-    from ..key import HA_URL, HA_API_KEY
+    from key import HA_URL, HA_API_KEY
 
     # Creating a client instance
     client = Client(HA_URL, HA_API_KEY)
