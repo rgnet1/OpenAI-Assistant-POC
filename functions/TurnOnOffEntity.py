@@ -15,10 +15,12 @@ class TurnOnOffEntity(ToolFunction):
         self.openai_func_desc = self.create_function_dict()
 
     def run_function(self, domain: str, entity_id:str, toggle:bool = False) -> float:
-        
-        client = Client(HA_URL, HA_API_KEY)
-        entity_domain = client.get_domain(domain)
-        combined_entity = f"{domain}.{entity_id}"
+        try:
+            client = Client(HA_URL, HA_API_KEY)
+            entity_domain = client.get_domain(domain)
+            combined_entity = f"{domain}.{entity_id}"
+        except Exception as e:
+            return "Could not connect to home assitant" + str(e)
         print(f"Entity:{combined_entity}")
         try:
             if toggle:
@@ -29,7 +31,10 @@ class TurnOnOffEntity(ToolFunction):
             entity_domain.turn_off(entity_id=combined_entity)
             print(f"Turning Entity:{combined_entity} off")
             return f"the {domain} was turned off"
-        except Exception as e:
-            print(e)
-            print(f"Caught exception: {type(e).__name__}, Message: {e}")
+        except AttributeError:
+            print("Error: AttributeError encountered. AI is using the wrong entity")
             return "Failed. You need to first retrieve the endity id and domain from your knowledge base"
+
+        except Exception as e:
+            print(f"Caught exception: {type(e).__name__}, Message: {e}")
+            return str(e)

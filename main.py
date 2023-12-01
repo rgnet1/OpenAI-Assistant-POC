@@ -1,9 +1,13 @@
 import openai
 import time
+import json
 from key import *
 from helpers.function_loader import *
 from helpers.HomeAssitantEntityList import *
+from constants import *
 from functions.GLaDOSTTS import GLaDOSTTS
+
+
 EXISTING_ASSISTANT = True
 UPDATE_EXISTING_ASSITANT = True
 # Dynamically load all functions in the function_descriptions fodler
@@ -157,11 +161,9 @@ def main():
             assistant_id=Glados.assistant.id,
             instructions=ASSISTANT_DESCRIPTION +". Please address the user as a test subject"
         )
-        speak = True
+        speak = False
         while True:
-            # Wait for 5 seconds
-            time.sleep(5)
-            
+                       
             # Retrieve the run status
             run_status = Glados.client.beta.threads.runs.retrieve(
                 thread_id=thread.id,
@@ -179,13 +181,13 @@ def main():
                 for msg in reversed(messages.data):
                     role = msg.role
                     content = msg.content[0].text.value
-                    if role == "assistant" and speak:
+                    if role == "assistant" and not speak:
                         content_split = content.split("\n")
                         for paragraph in content_split:
-                            tts.run_function(message=paragraph, volume=10)
+                            tts.run_function(message=paragraph, volume=DEFAULT_SPEAKER_VOLUME)
                             # time.sleep(10)
-                    if not speak:
-                        speak = True
+                    if speak:
+                        speak = False
                     print(f"{role.capitalize()}: {content}")
 
                 break
@@ -194,11 +196,9 @@ def main():
                 required_actions = run_status.required_action.submit_tool_outputs.model_dump()
                 # print(required_actions)
                 tool_outputs = []
-                import json
+                speak = any(action['function']['name'] == "gladosTTS" for action in required_actions["tool_calls"])
                 for action in required_actions["tool_calls"]:
                     func_name = action['function']['name']
-                    if func_name == "gladosTTS":
-                        speak = False
                     arguments = json.loads(action['function']['arguments'])
                     print(f"Calling Function:{func_name}")
                     if func_name in function_map:
@@ -218,7 +218,7 @@ def main():
                 )
             else:
                 print("Waiting for the Assistant to process...")
-                time.sleep(5)
+            time.sleep(5)
 
 if __name__ == "__main__":
     main()

@@ -13,9 +13,14 @@ class YahooStocks(ToolFunction):
         self.openai_func_desc = self.create_function_dict()
 
     def run_function(self, symbol: str) -> float:
-        print(f"INSIDE FUNCTOIN. Symbol is: {symbol}")
-        stock = yf.Ticker(symbol)
-        price = stock.history(period="1d")['Close'].iloc[-1]
-        print("LEAVING FUNCTION")
-        return price
+        try:
+            print(f"INSIDE FUNCTOIN. Symbol is: {symbol}")
+            stock = yf.Ticker(symbol)
+            price = stock.history(period="1d")['Close'].iloc[-1]
+            print("LEAVING FUNCTION")
+            return price
+        except Exception as e:
+            print(e)
+            print(f"Caught exception: {type(e).__name__}, Message: {e}")
+            return str(e)
     

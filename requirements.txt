@@ -1,3 +1,4 @@
 openai
 yfinance
 homeassistant_api
+googlemaps

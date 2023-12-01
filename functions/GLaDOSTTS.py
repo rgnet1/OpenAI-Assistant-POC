@@ -1,5 +1,6 @@
 from homeassistant_api import Client
 from key import HA_API_KEY, HA_URL
+from constants import DEFAULT_SPEAKER_VOLUME
 
 from .util.ToolFunction import *
 
@@ -14,7 +15,7 @@ class GLaDOSTTS(ToolFunction):
         self.add_parameter("speaker_entity", "string", "The sppeaker you want to use to play the TTS audio", required=False)
         self.openai_func_desc = self.create_function_dict()
 
-    def run_function(self, message, volume=9, speaker_entity="media_player.ramis_room_speaker", script_entity_id="set_volume_and_speak"):
+    def run_function(self, message, volume=DEFAULT_SPEAKER_VOLUME, speaker_entity="media_player.ramis_room_speaker", script_entity_id="set_volume_and_speak"):
         try:
             client = Client(HA_URL, HA_API_KEY, verify_ssl=False)
             script = client.get_domain("script")
