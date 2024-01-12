@@ -6,8 +6,6 @@ import googlemaps
 DEFAULT_NAME = "get_directions"
 DEFAULT_DESCRIPTION = "Get directions and current traffic from source to destination"
 
-import yfinance as yf
-
 
 class Maps(ToolFunction):
     def __init__(self, name=DEFAULT_NAME, description=DEFAULT_DESCRIPTION):
@@ -43,10 +41,3 @@ class Maps(ToolFunction):
         except Exception as e:
             print(f"Caught exception: {type(e).__name__}, Message: {e}")
             return str(e)
-
-
-def test_maps():
-    maps = Maps()
-    print(maps.run_function("Golden Gate Bridge", "Case Center"))
-
-test_maps()

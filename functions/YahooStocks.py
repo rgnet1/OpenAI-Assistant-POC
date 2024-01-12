@@ -17,7 +17,6 @@ class YahooStocks(ToolFunction):
             print(f"INSIDE FUNCTOIN. Symbol is: {symbol}")
             stock = yf.Ticker(symbol)
             price = stock.history(period="1d")['Close'].iloc[-1]
-            print("LEAVING FUNCTION")
             return price
         except Exception as e:
             print(e)

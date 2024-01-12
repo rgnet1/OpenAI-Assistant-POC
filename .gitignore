@@ -6,6 +6,7 @@ __pycache__/
 key.py
 home_assistant_data.json
 home_assitant_entity_list.txt
+client_secret_*
 # C extensions
 *.so
 

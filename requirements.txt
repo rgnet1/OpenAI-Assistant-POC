@@ -2,3 +2,4 @@ openai
 yfinance
 homeassistant_api
 googlemaps
+git+https://github.com/davidjkrause/sportsipy@master

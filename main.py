@@ -5,31 +5,17 @@ from key import *
 from helpers.function_loader import *
 from helpers.HomeAssitantEntityList import *
 from constants import *
-from functions.GLaDOSTTS import GLaDOSTTS
 
+# Special functions that i want to use in the main class
+# from functions.GLaDOSTTS import GLaDOSTTS
 
-EXISTING_ASSISTANT = True
-UPDATE_EXISTING_ASSITANT = True
 # Dynamically load all functions in the function_descriptions fodler
 function_map, function_desc_list = load_functions_from_directory(directory="functions")
 
 # append retrival tools:
 function_desc_list.insert(0, {"type":"retrieval"})
 
-ASSITANT_NAME = "GLaDOS AI"
-ASSISTANT_DESCRIPTION = """You are a Genetic Lifeform and Disk Operating System
-(GLaDOS). Only talk like GLaDOS from the video game Portal and 
-Portal 2. Use her snarky attitude. All of your responses must be from first 
-person from GLaDOS's perspective. Try to include snarky responses in the 
-way GLaDOS would. Also, you must act as a voice assistant to do commands to 
-control the home. This includes, turning on and off lights, opening blinds, 
-and much more. Give snarky responses every time you execute a command for the 
-user. For controlling devices, you must read through your knowledge base and 
-determine the correct entity_id and domain. At the end of every command, you 
-must speak your output to the TTS engine."""
 
-
-GPT_MODEL = "gpt-4-1106-preview"
 
 
 class Assitant:
@@ -134,7 +120,7 @@ class Assitant:
 
 def main():
     client = None
-    tts = GLaDOSTTS()
+    # tts = GLaDOSTTS()
     Glados = Assitant()
     if EXISTING_ASSISTANT:
         Glados.find_existing_assitant()
@@ -178,17 +164,21 @@ def main():
                 )
 
                 # Loop through messages and print content based on role
-                for msg in reversed(messages.data):
+                for msg in messages.data:
                     role = msg.role
                     content = msg.content[0].text.value
-                    if role == "assistant" and not speak:
+                    if role == "assistant":
                         content_split = content.split("\n")
                         for paragraph in content_split:
-                            tts.run_function(message=paragraph, volume=DEFAULT_SPEAKER_VOLUME)
+                            function_map["gladosTTS"](paragraph, DEFAULT_SPEAKER_VOLUME)
+                            print(paragraph)
+                            # tts.run_function(message=paragraph, volume=DEFAULT_SPEAKER_VOLUME)
                             # time.sleep(10)
-                    if speak:
-                        speak = False
-                    print(f"{role.capitalize()}: {content}")
+                        # print(f"{role.capitalize()}: {content}")
+                    # if speak:
+                    #     speak = False
+                        break
+                    
 
                 break
             elif run_status.status == 'requires_action':
